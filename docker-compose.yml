@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  service_b:
+    build:
+      context: ./service_b
+      dockerfile: Dockerfile
+    container_name: ml_lab_service_b
+    ports:
+      - "8001:8001"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health').read()"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - ml_network
+
+  service_a:
+    build:
+      context: ./service_a
+      dockerfile: Dockerfile
+    container_name: ml_lab_service_a
+    ports:
+      - "8000:8000"
+    depends_on:
+      service_b:
+        condition: service_healthy
+    environment:
+      - SERVICE_B_URL=http://service_b:8001/predict
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health').read()"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - ml_network
+
+networks:
+  ml_network:
+    driver: bridge
+

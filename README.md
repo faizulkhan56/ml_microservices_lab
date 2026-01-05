@@ -17,10 +17,14 @@ The project is designed to teach both:
 ml_microservices_lab/
 ├── service_a/
 │   ├── main.py
-│   └── requirements.txt
+│   ├── requirements.txt
+│   └── Dockerfile
 ├── service_b/
 │   ├── main.py
-│   └── requirements.txt
+│   ├── requirements.txt
+│   └── Dockerfile
+├── docker-compose.yml
+├── .dockerignore
 ├── .gitignore
 └── README.md
 ```
@@ -131,7 +135,7 @@ This lab's services are **stateless** (aside from logs / in-memory model object)
 
 ---
 
-## 5) Docker and microservices (conceptual)
+## 5) Docker and microservices
 
 In production, microservices are commonly shipped as containers:
 - each service → its own image
@@ -139,8 +143,9 @@ In production, microservices are commonly shipped as containers:
 - portable across dev/stage/prod
 - health checks + resource limits
 
-In this lab we use **venv** to keep dependencies isolated locally.
-(Think: `venv` ≈ local substitute for a Docker image.)
+This lab supports **both approaches**:
+- **Docker** (recommended): Full containerization with docker-compose
+- **venv** (local dev): Virtual environments for local development
 
 ---
 
@@ -162,7 +167,104 @@ In this lab we use **venv** to keep dependencies isolated locally.
 
 ---
 
-# Part 3 — Setup & Run (Ubuntu/Debian safe way)
+# Part 3 — Setup & Run
+
+## Option A: Docker Setup (Recommended)
+
+Docker provides containerized, isolated environments for both services. This is the recommended approach for consistency across different operating systems.
+
+### Prerequisites
+
+- [Docker](https://docs.docker.com/get-docker/) installed
+- [Docker Compose](https://docs.docker.com/compose/install/) installed
+
+### Quick Start with Docker
+
+1. **Build and start both services:**
+   ```bash
+   docker-compose up --build
+   ```
+
+   This will:
+   - Build Docker images for both services
+   - Start Service B on port 8001
+   - Start Service A on port 8000 (after Service B is healthy)
+   - Create a Docker network for service communication
+
+2. **Run in detached mode (background):**
+   ```bash
+   docker-compose up -d --build
+   ```
+
+3. **View logs:**
+   ```bash
+   # All services
+   docker-compose logs -f
+   
+   # Specific service
+   docker-compose logs -f service_a
+   docker-compose logs -f service_b
+   ```
+
+4. **Stop services:**
+   ```bash
+   docker-compose down
+   ```
+
+5. **Rebuild after code changes:**
+   ```bash
+   docker-compose up --build
+   ```
+
+### Docker Health Checks
+
+Both services include health checks. Service A waits for Service B to be healthy before starting.
+
+Check service status:
+```bash
+docker-compose ps
+```
+
+### Docker Networking
+
+Services communicate via Docker's internal network:
+- Service A connects to Service B using: `http://service_b:8001/predict`
+- From your host machine, use: `http://localhost:8000` and `http://localhost:8001`
+
+### Docker Troubleshooting
+
+**View container logs:**
+```bash
+docker-compose logs service_a
+docker-compose logs service_b
+```
+
+**Restart a specific service:**
+```bash
+docker-compose restart service_a
+docker-compose restart service_b
+```
+
+**Remove containers and rebuild:**
+```bash
+docker-compose down
+docker-compose up --build
+```
+
+**Check if ports are available:**
+```bash
+# Windows PowerShell
+netstat -ano | findstr :8000
+netstat -ano | findstr :8001
+
+# Linux/Mac
+lsof -i :8000
+lsof -i :8001
+```
+
+---
+
+## Option B: Local Setup (Ubuntu/Debian safe way)
 
 > If you are on Ubuntu/Debian with Python 3.12+, you may see:
 > `error: externally-managed-environment` (PEP 668).
@@ -219,9 +321,13 @@ curl http://localhost:8000/health
 
 ---
 
-# Part 4 — Test the lab (curl)
+# Part 4 — Testing the Services
 
-## 1) Service A without forwarding (only logging)
+This section covers multiple ways to test the microservices: curl, Postman, and Swagger UI.
+
+## Method 1: Using curl (Command Line)
+
+### 1) Service A without forwarding (only logging)
 
 ```bash
 curl -X POST -H "Content-Type: application/json" \
@@ -229,12 +335,12 @@ curl -X POST -H "Content-Type: application/json" \
   http://localhost:8000/process
 ```
 
-Expected response (example):
+**Expected response:**
 ```json
 {"status":"Input logged successfully"}
 ```
 
-## 2) Service A with forwarding (A → B)
+### 2) Service A with forwarding (A → B)
 
 ```bash
 curl -X POST -H "Content-Type: application/json" \
@@ -242,7 +348,7 @@ curl -X POST -H "Content-Type: application/json" \
   http://localhost:8000/process
 ```
 
-Expected response (example):
+**Expected response:**
 ```json
 {
   "status": "Input logged successfully",
@@ -257,13 +363,277 @@ Expected response (example):
 }
 ```
 
-## 3) Call Service B directly
+### 3) Call Service B directly
 
 ```bash
 curl -X POST -H "Content-Type: application/json" \
   -d '{"input":"test input"}' \
   http://localhost:8001/predict
 ```
+
+**Expected response:**
+```json
+{
+  "prediction": {
+    "class": "bird",
+    "confidence": 0.87,
+    "input_length": 10
+  },
+  "message": "Predicted class: bird with 87.0% confidence"
+}
+```
+
+### 4) Health check endpoints
+
+```bash
+# Service A health check
+curl http://localhost:8000/health
+
+# Service B health check
+curl http://localhost:8001/health
+
+# Service A root endpoint
+curl http://localhost:8000/
+
+# Service B root endpoint
+curl http://localhost:8001/
+```
+
+---
+
+## Method 2: Using Postman
+
+### Setup
+
+1. **Install Postman** from [postman.com](https://www.postman.com/downloads/)
+
+2. **Create a new Collection** named "ML Microservices Lab"
+
+### Test Cases
+
+#### Test 1: Service A - Process without forwarding
+
+- **Method:** `POST`
+- **URL:** `http://localhost:8000/process`
+- **Headers:**
+  - `Content-Type: application/json`
+- **Body (raw JSON):**
+  ```json
+  {
+    "data": "sample input",
+    "forward_to_model": false
+  }
+  ```
+- **Expected Status:** `200 OK`
+- **Expected Response:**
+  ```json
+  {
+    "status": "Input logged successfully"
+  }
+  ```
+
+#### Test 2: Service A - Process with forwarding
+
+- **Method:** `POST`
+- **URL:** `http://localhost:8000/process`
+- **Headers:**
+  - `Content-Type: application/json`
+- **Body (raw JSON):**
+  ```json
+  {
+    "data": "cat image data",
+    "forward_to_model": true
+  }
+  ```
+- **Expected Status:** `200 OK`
+- **Expected Response:** Contains `status` and `model_prediction` fields
+
+#### Test 3: Service B - Direct prediction
+
+- **Method:** `POST`
+- **URL:** `http://localhost:8001/predict`
+- **Headers:**
+  - `Content-Type: application/json`
+- **Body (raw JSON):**
+  ```json
+  {
+    "input": "test input"
+  }
+  ```
+- **Expected Status:** `200 OK`
+- **Expected Response:** Contains `prediction` and `message` fields
+
+#### Test 4: Health Checks
+
+- **Service A Health:**
+  - Method: `GET`
+  - URL: `http://localhost:8000/health`
+  
+- **Service B Health:**
+  - Method: `GET`
+  - URL: `http://localhost:8001/health`
+
+### Postman Tips
+
+- **Save requests** in your collection for easy reuse
+- **Use environment variables** for base URLs (e.g., `{{base_url}}/process`)
+- **Create test scripts** to validate response structure
+- **Export collection** to share with your team
+
+---
+
+## Method 3: Using Swagger UI (Interactive API Documentation)
+
+FastAPI automatically generates interactive API documentation using Swagger UI.
+
+### Access Swagger UI
+
+1. **Service A Swagger UI:**
+   - Open browser: `http://localhost:8000/docs`
+   - This shows all endpoints for Service A
+
+2. **Service B Swagger UI:**
+   - Open browser: `http://localhost:8001/docs`
+   - This shows all endpoints for Service B
+
+### Using Swagger UI
+
+#### Test Service A `/process` endpoint:
+
+1. Navigate to `http://localhost:8000/docs`
+2. Find the `POST /process` endpoint
+3. Click "Try it out"
+4. Enter request body:
+   ```json
+   {
+     "data": "cat image data",
+     "forward_to_model": true
+   }
+   ```
+5. Click "Execute"
+6. View the response in the "Responses" section
+
+#### Test Service B `/predict` endpoint:
+
+1. Navigate to `http://localhost:8001/docs`
+2. Find the `POST /predict` endpoint
+3. Click "Try it out"
+4. Enter request body:
+   ```json
+   {
+     "input": "test input"
+   }
+   ```
+5. Click "Execute"
+6. View the response
+
+### Alternative: ReDoc Documentation
+
+FastAPI also provides ReDoc documentation:
+
+- **Service A ReDoc:** `http://localhost:8000/redoc`
+- **Service B ReDoc:** `http://localhost:8001/redoc`
+
+ReDoc provides a cleaner, more readable documentation format.
+
+---
+
+## Testing Scenarios
+
+### Scenario 1: Service B unavailable
+
+1. Stop Service B (or don't start it)
+2. Send request to Service A with `forward_to_model: true`
+3. **Expected:** Service A returns `503 Service Unavailable` error
+
+### Scenario 2: Invalid request format
+
+1. Send request to Service A with missing `data` field:
+   ```json
+   {
+     "forward_to_model": true
+   }
+   ```
+2. **Expected:** `422 Unprocessable Entity` validation error
+
+### Scenario 3: Different input lengths
+
+Test with various input lengths to see `input_length` in responses:
+- Short: `"hi"`
+- Medium: `"this is a medium length input"`
+- Long: `"this is a very long input string with many characters"`
+
+---
+
+## Quick Test Script
+
+Save this as `test_services.sh` (Linux/Mac) or `test_services.ps1` (Windows):
+
+**Linux/Mac (`test_services.sh`):**
+```bash
+#!/bin/bash
+
+echo "Testing Service A Health..."
+curl http://localhost:8000/health
+echo -e "\n\n"
+
+echo "Testing Service B Health..."
+curl http://localhost:8001/health
+echo -e "\n\n"
+
+echo "Testing Service A without forwarding..."
+curl -X POST -H "Content-Type: application/json" \
+  -d '{"data":"test","forward_to_model":false}' \
+  http://localhost:8000/process
+echo -e "\n\n"
+
+echo "Testing Service A with forwarding..."
+curl -X POST -H "Content-Type: application/json" \
+  -d '{"data":"test input","forward_to_model":true}' \
+  http://localhost:8000/process
+echo -e "\n\n"
+
+echo "Testing Service B directly..."
+curl -X POST -H "Content-Type: application/json" \
+  -d '{"input":"test"}' \
+  http://localhost:8001/predict
+```
+
+**Windows PowerShell (`test_services.ps1`):**
+```powershell
+Write-Host "Testing Service A Health..."
+Invoke-RestMethod -Uri http://localhost:8000/health
+Write-Host "`n"
+
+Write-Host "Testing Service B Health..."
+Invoke-RestMethod -Uri http://localhost:8001/health
+Write-Host "`n"
+
+Write-Host "Testing Service A without forwarding..."
+$body = @{
+    data = "test"
+    forward_to_model = $false
+} | ConvertTo-Json
+Invoke-RestMethod -Uri http://localhost:8000/process -Method Post -Body $body -ContentType "application/json"
+Write-Host "`n"
+
+Write-Host "Testing Service A with forwarding..."
+$body = @{
+    data = "test input"
+    forward_to_model = $true
+} | ConvertTo-Json
+Invoke-RestMethod -Uri http://localhost:8000/process -Method Post -Body $body -ContentType "application/json"
+Write-Host "`n"
+
+Write-Host "Testing Service B directly..."
+$body = @{
+    input = "test"
+} | ConvertTo-Json
+Invoke-RestMethod -Uri http://localhost:8001/predict -Method Post -Body $body -ContentType "application/json"
+```
+
+---
+
 
 ---
 
@@ -373,7 +743,7 @@ This lab intentionally uses simple choices. In real systems, you’d typically a
 - **Resilience patterns**: retries, timeouts, circuit breakers, fallbacks
 - **Async messaging**: Kafka/RabbitMQ/Pulsar to decouple pipelines
 - **Observability**: OpenTelemetry traces, metrics, structured logs
-- **Containerization**: Dockerfile + compose/Kubernetes manifests
+- **Containerization**: ✅ Already implemented! (Dockerfile + docker-compose.yml)
 - **Security**: authn/authz, mTLS, rate limiting
 
 ---

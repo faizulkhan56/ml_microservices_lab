@@ -3,6 +3,7 @@ from pydantic import BaseModel
 import requests
 import logging
 import uvicorn
+import os
 
 # -----------------------------
 # Logging configuration
@@ -23,8 +24,8 @@ class InputData(BaseModel):
     data: str
     forward_to_model: bool = True
 
-# Service B URL (hard-coded for the lab)
-SERVICE_B_URL = "http://localhost:8001/predict"
+# Service B URL (configurable via environment variable for Docker)
+SERVICE_B_URL = os.getenv("SERVICE_B_URL", "http://localhost:8001/predict")
 
 
 @app.get("/")

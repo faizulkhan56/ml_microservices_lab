@@ -38,6 +38,72 @@ That mirrors real microservices deployments (one container/image per service).
 
 ## 1) Monolithic vs Microservices
 
+### Architecture Comparison
+
+```mermaid
+graph TB
+    subgraph Monolith["Monolithic Architecture"]
+        UI[User Interface]
+        BL[Business Logic]
+        DA[Database Access]
+        DB[(Database)]
+        
+        UI --> BL
+        BL --> DA
+        DA --> DB
+    end
+    
+    subgraph Microservices["Microservices Architecture"]
+        Gateway[API GATEWAY]
+        
+        subgraph AuthSvc["Auth Service"]
+            AuthAPI[API]
+            AuthDB[(DB)]
+            AuthAPI --> AuthDB
+        end
+        
+        subgraph UserSvc["User Service"]
+            UserAPI[API]
+            UserDB[(DB)]
+            UserAPI --> UserDB
+        end
+        
+        subgraph ProductSvc["Product Service"]
+            ProductAPI[API]
+            ProductDB[(DB)]
+            ProductAPI --> ProductDB
+        end
+        
+        subgraph PaymentSvc["Payment Service"]
+            PaymentAPI[API]
+            PaymentDB[(DB)]
+            PaymentAPI --> PaymentDB
+        end
+        
+        Gateway -.-> AuthAPI
+        Gateway -.-> UserAPI
+        Gateway -.-> ProductAPI
+        Gateway -.-> PaymentAPI
+        AuthAPI -.-> UserAPI
+        ProductAPI -.-> PaymentAPI
+    end
+    
+    style Monolith fill:#e1f5ff
+    style Microservices fill:#f0f0f0
+    style Gateway fill:#e1d5f5
+```
+
+**Monolithic Architecture:**
+- Tightly coupled components
+- Single codebase
+- Single deployment unit
+
+**Microservices Architecture:**
+- Loosely coupled services
+- Independent codebases
+- Separate deployment units
+- Communication via APIs
+
 ### Monolithic architecture
 A monolith is a single deployable unit where UI, business logic, and data access are tightly coupled.
 
@@ -93,6 +159,83 @@ This lab focuses on a **minimal** slice:
 
 ## 3) Communication patterns between services
 
+### Limitations of REST
+
+While REST is versatile, it's not optimal for all communication patterns:
+- **Performance overhead** from HTTP headers and connection establishment
+- **Limited support for bi-directional communication**
+- **Can be verbose for complex data structures**
+- **Not ideal for high-frequency, low-latency requirements**
+
+### Communication Patterns Comparison
+
+```mermaid
+graph LR
+    subgraph REST["REST API (HTTP)"]
+        Client1[Client web app]
+        Server1[Server API Service]
+        Client1 -->|GET /users/123| Server1
+        Server1 -->|JSON Data| Client1
+    end
+    
+    subgraph gRPC["gRPC (Binary Protocol)"]
+        Client2[Service A ML Client]
+        Server2[Service B Prediction API]
+        Client2 -->|GET /users/123| Server2
+        Server2 -->|JSON Data| Client2
+    end
+    
+    subgraph MQ["Message Queue (ASYNC)"]
+        Publisher[Publisher Data Service]
+        Queue[Message Queue]
+        Consumer[Consumer ML Pipeline]
+        Publisher -->|Publish| Queue
+        Queue -->|Consume| Consumer
+    end
+    
+    style REST fill:#e1f5ff
+    style gRPC fill:#e1d5f5
+    style MQ fill:#ffe1d5
+```
+
+**REST API Key Features:**
+- Synchronous request-response
+- Standard HTTP methods
+- Human-readable (JSON/XML)
+- Stateless communication
+
+**gRPC Key Features:**
+- High Performance Binary Protocol
+- Bi-directional Streaming
+- Strong typing (Protocol Buffers)
+- Multi-language support
+
+**Message Queue Key Features:**
+- Asynchronous messaging
+- Reliable message delivery
+- Decoupled services
+- Load Balancing and buffering
+
+### When to Use Each Pattern
+
+**REST is Best For:**
+- Public APIs and web services
+- Simple CRUD operations
+- Human-readable debugging
+- Caching and standard HTTP features
+
+**gRPC is Best For:**
+- High performance internal APIs
+- Real-time Streaming data
+- Microservices Communication
+- Low-Latency requirements
+
+**Message Queues are Best For:**
+- Event-driven architecture
+- Background job processing
+- Handling traffic spikes
+- Loose coupling services
+
 ### REST (HTTP + JSON)
 - Human-friendly, widely supported, easy testing with curl
 - Great for request/response interactions
@@ -113,6 +256,100 @@ This lab uses **REST** (simplest to learn and test).
 ---
 
 ## 4) Stateless vs Stateful services
+
+### Characteristics of Stateless Services
+
+**Independence from Previous Interactions:** Each request is processed without knowledge of previous requests. This enables any service instance to handle any request, facilitating simple horizontal scaling.
+
+**Simplified Recovery:** If a stateless service instance fails, requests can be immediately redirected to another instance without data loss or inconsistency.
+
+**Deployment Flexibility:** New versions can be deployed using strategies like blue-green deployment or rolling updates without complex state migration.
+
+**Resource Efficiency:** Instances can be added or removed based on demand without concerns about state transfer.
+
+### Architecture Comparison
+
+```mermaid
+graph TB
+    subgraph Stateless["Stateless Services"]
+        LB[Load Balancer]
+        API1[API Instance<br/>Port: 8080]
+        API2[API Instance<br/>Port: 8081]
+        API3[API Instance<br/>Port: 8082]
+        ExtDB[(External Database)]
+        
+        LB -.->|Request| API1
+        LB -.->|Request| API2
+        LB -.->|Request| API3
+        API1 --> ExtDB
+        API2 --> ExtDB
+        API3 --> ExtDB
+    end
+    
+    subgraph Stateful["Stateful Services"]
+        Session1[User A session]
+        Session2[User B session]
+        Session3[User C session]
+        FeatureStore[Feature Store Service<br/>Maintains Cache]
+        InternalState[Internal State Cache<br/>& Session]
+        PersistDB[(Persistent Database<br/>State Backup)]
+        
+        Session1 --> FeatureStore
+        Session2 --> FeatureStore
+        Session3 --> FeatureStore
+        FeatureStore --> InternalState
+        InternalState --> PersistDB
+    end
+    
+    style Stateless fill:#d5f5d5
+    style Stateful fill:#fff4d5
+```
+
+**Stateless Benefits:**
+- Easy horizontal scaling - add/remove instances anytime
+- No data loss on failure - any instance can handle any request
+- Simple deployment - rolling updates without state migration
+
+**Stateful Challenges:**
+- Complex scaling - state must be migrated or replicated
+- Recovery complexity - state must be restored after failures
+- Consistency challenges - multiple instances need synchronized state
+
+### Scaling Comparison
+
+```mermaid
+graph LR
+    subgraph StatelessScale["Stateless Scaling"]
+        Before1[Before:<br/>2 instances]
+        After1[After high load:<br/>5 instances]
+        Before1 -->|Easy Auto Scaling| After1
+    end
+    
+    subgraph StatefulScale["Stateful Scaling"]
+        Before2[Before + state]
+        Migration[Backup → New Svc → Restore]
+        After2[svc1<br/>svc2<br/>Shared State DB]
+        Before2 -->|Complex scaling| Migration
+        Migration --> After2
+    end
+    
+    style StatelessScale fill:#d5f5d5
+    style StatefulScale fill:#fff4d5
+```
+
+### Real World Examples
+
+**Stateless Services:**
+- REST APIs
+- ML inference
+- Image processing
+- Authentication
+
+**Stateful Services:**
+- Databases
+- Session storage
+- Shopping Carts
+- Real-time Gaming
 
 ### Stateless service
 Does NOT store client session state between requests.
@@ -164,6 +401,38 @@ This lab supports **both approaches**:
 3. Service B returns a mock prediction (random class + confidence)
 
 4. Service A returns a combined response.
+
+## Communication Flow Diagram
+
+```mermaid
+sequenceDiagram
+    participant Client as Client<br/>(Browser/App)
+    participant ServiceA as Service A<br/>(Input Logger)<br/>Port: 8000
+    participant ServiceB as Service B<br/>(ML Predictor)<br/>Port: 8001
+    
+    Note over Client,ServiceB: Success Scenario
+    
+    Client->>+ServiceA: POST /process<br/>{"data":"Input","forward_to_model":true}
+    Note over ServiceA: Logs Input data
+    ServiceA->>+ServiceB: POST /predict<br/>{"input": "Input data"}
+    Note over ServiceB: ML Model Prediction
+    ServiceB-->>-ServiceA: 200 OK<br/>{"prediction":{"class":"fish","confidence":0.88}}
+    Note over ServiceA: Combines Log status + prediction
+    ServiceA-->>-Client: 200 OK<br/>Complete response with prediction
+    
+    Note over Client,ServiceB: Error Scenario
+    
+    Client->>+ServiceA: POST /process<br/>{"data":"Input","forward_to_model":true}
+    ServiceA->>ServiceB: POST /predict
+    ServiceB-->>ServiceA: Service B unavailable
+    ServiceA-->>-Client: 503 Service unavailable
+```
+
+**Legend:**
+- **Request**: Solid arrow (→)
+- **Response**: Dashed arrow (-->>)
+- **Error**: Red dashed arrow
+- **Internal Action**: Note boxes
 
 ---
 

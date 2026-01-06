@@ -145,113 +145,113 @@ A robust ML microservices platform consists of multiple specialized services, ea
 
 ```mermaid
 graph TB
-    subgraph External["External Data Sources"]
-        DB[(Databases)]
-        API[APIs]
-        Stream[Data Streams]
-        Files[File Storage]
+    subgraph External["<b>External Data Sources</b>"]
+        DB[("<b>Databases</b>")]
+        API["<b>APIs</b>"]
+        Stream["<b>Data Streams</b>"]
+        Files["<b>File Storage</b>"]
     end
     
-    subgraph Ingestion["Data Ingestion Service"]
-        DI[Ingestion API]
-        DI -->|Validate Schema| DI
-        DI -->|Publish Events| Events
+    subgraph Ingestion["<b>Data Ingestion Service</b>"]
+        DI["<b>Ingestion API</b>"]
+        DI ==>|"<b>Validate Schema</b>"| DI
+        DI ==>|"<b>Publish Events</b>"| Events
     end
     
-    subgraph Processing["Data Processing Layer"]
-        Preproc[Preprocessing Service]
-        FE[Feature Engineering Service]
-        Preproc -->|Clean & Transform| Preproc
-        FE -->|Create Features| FS
+    subgraph Processing["<b>Data Processing Layer</b>"]
+        Preproc["<b>Preprocessing Service</b>"]
+        FE["<b>Feature Engineering Service</b>"]
+        Preproc ==>|"<b>Clean & Transform</b>"| Preproc
+        FE ==>|"<b>Create Features</b>"| FS
     end
     
-    subgraph Storage["Storage & Registry Layer"]
-        FS[(Feature Store)]
-        MR[Model Registry Service]
-        DV[Data Versioning Service]
-        Meta[Metadata Service]
+    subgraph Storage["<b>Storage & Registry Layer</b>"]
+        FS[("<b>Feature Store</b>")]
+        MR["<b>Model Registry Service</b>"]
+        DV["<b>Data Versioning Service</b>"]
+        Meta["<b>Metadata Service</b>"]
     end
     
-    subgraph Training["Model Development Layer"]
-        MT[Model Training Service]
-        ET[Experiment Tracking Service]
-        MT -->|Register Models| MR
-        MT -->|Log Experiments| ET
-        ET -->|Track Metrics| Meta
+    subgraph Training["<b>Model Development Layer</b>"]
+        MT["<b>Model Training Service</b>"]
+        ET["<b>Experiment Tracking Service</b>"]
+        MT ==>|"<b>Register Models</b>"| MR
+        MT ==>|"<b>Log Experiments</b>"| ET
+        ET ==>|"<b>Track Metrics</b>"| Meta
     end
     
-    subgraph Serving["Model Serving Layer"]
-        Gateway[API Gateway]
-        MA[Model API Service]
-        MD[Model Deployment Service]
-        MA -->|Load Models| MR
-        MD -->|Deploy| MA
+    subgraph Serving["<b>Model Serving Layer</b>"]
+        Gateway["<b>API Gateway</b>"]
+        MA["<b>Model API Service</b>"]
+        MD["<b>Model Deployment Service</b>"]
+        MA ==>|"<b>Load Models</b>"| MR
+        MD ==>|"<b>Deploy</b>"| MA
     end
     
-    subgraph Monitoring["Observability Layer"]
-        Monitor[Monitoring Service]
-        Notify[Notification Service]
-        Monitor -->|Alerts| Notify
+    subgraph Monitoring["<b>Observability Layer</b>"]
+        Monitor["<b>Monitoring Service</b>"]
+        Notify["<b>Notification Service</b>"]
+        Monitor ==>|"<b>Alerts</b>"| Notify
     end
     
-    subgraph Support["Supporting Services"]
-        Auth[Auth & Authorization]
-        Config[Configuration Management]
-        DL[Data Lineage Service]
-        MG[Model Governance Service]
-        AB[A/B Testing Service]
-        BP[Batch Processing Service]
+    subgraph Support["<b>Supporting Services</b>"]
+        Auth["<b>Auth & Authorization</b>"]
+        Config["<b>Configuration Management</b>"]
+        DL["<b>Data Lineage Service</b>"]
+        MG["<b>Model Governance Service</b>"]
+        AB["<b>A/B Testing Service</b>"]
+        BP["<b>Batch Processing Service</b>"]
     end
     
-    subgraph Orchestration["Orchestration Layer"]
-        WF[Workflow Orchestration<br/>Airflow/Argo]
-        CICD[CI/CD Service]
+    subgraph Orchestration["<b>Orchestration Layer</b>"]
+        WF["<b>Workflow Orchestration</b><br/><b>Airflow/Argo</b>"]
+        CICD["<b>CI/CD Service</b>"]
     end
     
-    %% Data Flow
-    External --> DI
-    DI --> Preproc
-    Preproc --> FS
-    FE --> FS
-    FS --> MT
-    MT --> MR
-    MR --> MA
-    Gateway --> MA
+    %% Data Flow - Thick arrows
+    External ==> DI
+    DI ==> Preproc
+    Preproc ==> FS
+    FE ==> FS
+    FS ==> MT
+    MT ==> MR
+    MR ==> MA
+    Gateway ==> MA
     
-    %% Monitoring connections
-    MA -.->|Metrics| Monitor
-    MT -.->|Metrics| Monitor
-    Preproc -.->|Metrics| Monitor
+    %% Monitoring connections - Thick dashed arrows
+    MA ==.>|"<b>Metrics</b>"| Monitor
+    MT ==.>|"<b>Metrics</b>"| Monitor
+    Preproc ==.>|"<b>Metrics</b>"| Monitor
     
-    %% Supporting connections
-    Auth -.->|Secure| Gateway
-    Auth -.->|Secure| MT
-    Config -.->|Configure| MA
-    Config -.->|Configure| MT
-    DL -.->|Track| Preproc
-    DL -.->|Track| FE
-    MG -.->|Govern| MR
-    AB -.->|Test| MA
-    BP -.->|Process| Preproc
+    %% Supporting connections - Thick dashed arrows
+    Auth ==.>|"<b>Secure</b>"| Gateway
+    Auth ==.>|"<b>Secure</b>"| MT
+    Config ==.>|"<b>Configure</b>"| MA
+    Config ==.>|"<b>Configure</b>"| MT
+    DL ==.>|"<b>Track</b>"| Preproc
+    DL ==.>|"<b>Track</b>"| FE
+    MG ==.>|"<b>Govern</b>"| MR
+    AB ==.>|"<b>Test</b>"| MA
+    BP ==.>|"<b>Process</b>"| Preproc
     
-    %% Orchestration
-    WF -.->|Orchestrate| MT
-    WF -.->|Orchestrate| Preproc
-    CICD -.->|Deploy| MD
+    %% Orchestration - Thick dashed arrows
+    WF ==.>|"<b>Orchestrate</b>"| MT
+    WF ==.>|"<b>Orchestrate</b>"| Preproc
+    CICD ==.>|"<b>Deploy</b>"| MD
     
-    %% Metadata connections
-    Meta -.->|Store Metadata| FS
-    Meta -.->|Store Metadata| MR
-    Meta -.->|Store Metadata| DV
+    %% Metadata connections - Thick dashed arrows
+    Meta ==.>|"<b>Store Metadata</b>"| FS
+    Meta ==.>|"<b>Store Metadata</b>"| MR
+    Meta ==.>|"<b>Store Metadata</b>"| DV
     
-    style Ingestion fill:#e1f5ff
-    style Processing fill:#f3e5f5
-    style Storage fill:#fff3e0
-    style Training fill:#e8f5e9
-    style Serving fill:#fce4ec
-    style Monitoring fill:#fff9c4
-    style Support fill:#f1f8e9
-    style Orchestration fill:#e0f2f1
+    style Ingestion fill:#e1f5ff,stroke:#01579b,stroke-width:3px
+    style Processing fill:#f3e5f5,stroke:#4a148c,stroke-width:3px
+    style Storage fill:#fff3e0,stroke:#e65100,stroke-width:3px
+    style Training fill:#e8f5e9,stroke:#1b5e20,stroke-width:3px
+    style Serving fill:#fce4ec,stroke:#880e4f,stroke-width:3px
+    style Monitoring fill:#fff9c4,stroke:#f57f17,stroke-width:3px
+    style Support fill:#f1f8e9,stroke:#33691e,stroke-width:3px
+    style Orchestration fill:#e0f2f1,stroke:#004d40,stroke-width:3px
 ```
 
 ### Core Services

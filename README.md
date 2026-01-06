@@ -139,21 +139,202 @@ Microservices split the system into **small independent services** that communic
 
 ## 2) Core services in an ML microservices platform
 
-Common ML microservices you’ll see in real systems:
+A robust ML microservices platform consists of multiple specialized services, each handling a specific aspect of the machine learning lifecycle. Understanding these core services helps in designing scalable and maintainable ML systems.
 
-- **Data Ingestion**: pulls data from sources (APIs, DBs, streams)
-- **Preprocessing**: cleans / normalizes / transforms raw data
-- **Feature Store**: centralized feature definitions + online/offline access
-- **Training Service**: runs training jobs, hyperparameter tuning, evaluation
-- **Model Registry**: versioned model artifacts + metadata + approvals
-- **Inference / Model API**: exposes prediction endpoints with SLA requirements
-- **Monitoring**: technical + ML signals (latency, errors, drift, model decay)
-- **Orchestration**: workflow engines (Airflow, Argo Workflows, etc.)
-- **CI/CD**: pipelines for code + model promotion
+### ML Microservices Architecture Overview
 
-This lab focuses on a **minimal** slice:
-- Service A = gateway/logging/orchestration
-- Service B = inference service (mock model)
+```mermaid
+graph TB
+    subgraph External["External Data Sources"]
+        DB[(Databases)]
+        API[APIs]
+        Stream[Data Streams]
+        Files[File Storage]
+    end
+    
+    subgraph Ingestion["Data Ingestion Service"]
+        DI[Ingestion API]
+        DI -->|Validate Schema| DI
+        DI -->|Publish Events| Events
+    end
+    
+    subgraph Processing["Data Processing Layer"]
+        Preproc[Preprocessing Service]
+        FE[Feature Engineering Service]
+        Preproc -->|Clean & Transform| Preproc
+        FE -->|Create Features| FS
+    end
+    
+    subgraph Storage["Storage & Registry Layer"]
+        FS[(Feature Store)]
+        MR[Model Registry Service]
+        DV[Data Versioning Service]
+        Meta[Metadata Service]
+    end
+    
+    subgraph Training["Model Development Layer"]
+        MT[Model Training Service]
+        ET[Experiment Tracking Service]
+        MT -->|Register Models| MR
+        MT -->|Log Experiments| ET
+        ET -->|Track Metrics| Meta
+    end
+    
+    subgraph Serving["Model Serving Layer"]
+        Gateway[API Gateway]
+        MA[Model API Service]
+        MD[Model Deployment Service]
+        MA -->|Load Models| MR
+        MD -->|Deploy| MA
+    end
+    
+    subgraph Monitoring["Observability Layer"]
+        Monitor[Monitoring Service]
+        Notify[Notification Service]
+        Monitor -->|Alerts| Notify
+    end
+    
+    subgraph Support["Supporting Services"]
+        Auth[Auth & Authorization]
+        Config[Configuration Management]
+        DL[Data Lineage Service]
+        MG[Model Governance Service]
+        AB[A/B Testing Service]
+        BP[Batch Processing Service]
+    end
+    
+    subgraph Orchestration["Orchestration Layer"]
+        WF[Workflow Orchestration<br/>Airflow/Argo]
+        CICD[CI/CD Service]
+    end
+    
+    %% Data Flow
+    External --> DI
+    DI --> Preproc
+    Preproc --> FS
+    FE --> FS
+    FS --> MT
+    MT --> MR
+    MR --> MA
+    Gateway --> MA
+    
+    %% Monitoring connections
+    MA -.->|Metrics| Monitor
+    MT -.->|Metrics| Monitor
+    Preproc -.->|Metrics| Monitor
+    
+    %% Supporting connections
+    Auth -.->|Secure| Gateway
+    Auth -.->|Secure| MT
+    Config -.->|Configure| MA
+    Config -.->|Configure| MT
+    DL -.->|Track| Preproc
+    DL -.->|Track| FE
+    MG -.->|Govern| MR
+    AB -.->|Test| MA
+    BP -.->|Process| Preproc
+    
+    %% Orchestration
+    WF -.->|Orchestrate| MT
+    WF -.->|Orchestrate| Preproc
+    CICD -.->|Deploy| MD
+    
+    %% Metadata connections
+    Meta -.->|Store Metadata| FS
+    Meta -.->|Store Metadata| MR
+    Meta -.->|Store Metadata| DV
+    
+    style Ingestion fill:#e1f5ff
+    style Processing fill:#f3e5f5
+    style Storage fill:#fff3e0
+    style Training fill:#e8f5e9
+    style Serving fill:#fce4ec
+    style Monitoring fill:#fff9c4
+    style Support fill:#f1f8e9
+    style Orchestration fill:#e0f2f1
+```
+
+### Core Services
+
+#### Data Ingestion Service
+
+The data ingestion service serves as the entry point for all data flowing into the ML system. It must handle diverse data sources, formats, and volumes while ensuring data integrity and reliability. A robust implementation should process both batch and streaming data with appropriate error handling and retry mechanisms.
+
+**Key responsibilities:**
+- Connecting to external sources (databases, APIs, streams)
+- Validating incoming data against schemas
+- Publishing events to trigger downstream processing
+
+#### Preprocessing Service
+
+Raw data rarely arrives in a form suitable for machine learning. The preprocessing service transforms this raw data into a clean, structured format ready for feature extraction and model training. It maintains versioned transformation pipelines to prevent training-serving skew.
+
+**Key responsibilities:**
+- Handling missing values and outliers
+- Normalizing and standardizing data
+- Applying domain-specific transformations
+
+#### Feature Store Service
+
+The feature store has emerged as a critical component in modern ML architectures, serving as a centralized repository for features used across multiple models. By centralizing feature computation and storage, it eliminates redundant processing and ensures consistent definitions.
+
+**Key responsibilities:**
+- Storing computed features with metadata
+- Ensuring consistency between training and serving
+- Enabling feature sharing across teams and models
+
+#### Model Training Service
+
+This service orchestrates the resource-intensive process of training ML models, from simple regression models to complex neural networks. It integrates with experiment tracking tools to maintain comprehensive records of training runs.
+
+**Key responsibilities:**
+- Executing training jobs on appropriate hardware
+- Performing hyperparameter optimization
+- Evaluating and registering trained models
+
+#### Model API Service (Inference / Model API)
+
+The model API service exposes trained models through well-defined interfaces, handling the critical transition from development to production. As the public face of the ML system, it requires special attention to reliability, scalability, and security.
+
+**Key responsibilities:**
+- Implementing prediction endpoints with appropriate interfaces
+- Validating inputs and transforming outputs
+- Monitoring performance metrics like latency and throughput
+
+#### Monitoring Service
+
+Continuous monitoring is essential to detect issues early and maintain performance over time. This service tracks both technical metrics and ML-specific concerns like data drift and concept drift.
+
+**Key responsibilities:**
+- Detecting data and concept drift
+- Alerting on performance degradation
+- Visualizing metrics through dashboards
+
+### Additional Services
+
+There are many other services that can enhance an ML microservices platform:
+
+- **Metadata Service**: Manages metadata about datasets, models, and experiments
+- **Experiment Tracking Service**: Logs and tracks ML experiments
+- **Model Registry Service**: Versioned model artifacts + metadata + approvals
+- **Data Versioning Service**: Tracks different versions of datasets
+- **A/B Testing Service**: Enables experimentation with different model versions
+- **Feature Engineering Service**: Automated feature creation and selection
+- **Workflow Orchestration Service**: Workflow engines (Airflow, Argo Workflows, etc.)
+- **Model Deployment Service**: Handles model deployment and rollback
+- **Authentication & Authorization Service**: Security and access control
+- **Configuration Management Service**: Centralized configuration
+- **Data Lineage Service**: Tracks data flow and transformations
+- **Model Governance Service**: Ensures compliance and model quality
+- **Notification Service**: Alerts and notifications
+- **Batch Processing Service**: Handles large-scale batch jobs
+- **Continuous Integration/Continuous Deployment (CI/CD) Service**: Pipelines for code + model promotion
+
+### This Lab's Focus
+
+This lab focuses on a **minimal** slice to demonstrate core concepts:
+- **Service A** = gateway/logging/orchestration (represents Data Ingestion + Gateway patterns)
+- **Service B** = inference service (mock model) (represents Model API Service)
 
 ---
 

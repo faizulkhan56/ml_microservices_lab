@@ -218,31 +218,31 @@ graph TB
     MR ==> MA
     Gateway ==> MA
     
-    %% Monitoring connections - Thick dashed arrows
-    MA ==.>|Metrics| Monitor
-    MT ==.>|Metrics| Monitor
-    Preproc ==.>|Metrics| Monitor
+    %% Monitoring connections - Thick arrows
+    MA ==>|Metrics| Monitor
+    MT ==>|Metrics| Monitor
+    Preproc ==>|Metrics| Monitor
     
-    %% Supporting connections - Thick dashed arrows
-    Auth ==.>|Secure| Gateway
-    Auth ==.>|Secure| MT
-    Config ==.>|Configure| MA
-    Config ==.>|Configure| MT
-    DL ==.>|Track| Preproc
-    DL ==.>|Track| FE
-    MG ==.>|Govern| MR
-    AB ==.>|Test| MA
-    BP ==.>|Process| Preproc
+    %% Supporting connections - Thick arrows
+    Auth ==>|Secure| Gateway
+    Auth ==>|Secure| MT
+    Config ==>|Configure| MA
+    Config ==>|Configure| MT
+    DL ==>|Track| Preproc
+    DL ==>|Track| FE
+    MG ==>|Govern| MR
+    AB ==>|Test| MA
+    BP ==>|Process| Preproc
     
-    %% Orchestration - Thick dashed arrows
-    WF ==.>|Orchestrate| MT
-    WF ==.>|Orchestrate| Preproc
-    CICD ==.>|Deploy| MD
+    %% Orchestration - Thick arrows
+    WF ==>|Orchestrate| MT
+    WF ==>|Orchestrate| Preproc
+    CICD ==>|Deploy| MD
     
-    %% Metadata connections - Thick dashed arrows
-    Meta ==.>|Store Metadata| FS
-    Meta ==.>|Store Metadata| MR
-    Meta ==.>|Store Metadata| DV
+    %% Metadata connections - Thick arrows
+    Meta ==>|Store Metadata| FS
+    Meta ==>|Store Metadata| MR
+    Meta ==>|Store Metadata| DV
     
     style Ingestion fill:#e1f5ff,stroke:#01579b,stroke-width:3px
     style Processing fill:#f3e5f5,stroke:#4a148c,stroke-width:3px

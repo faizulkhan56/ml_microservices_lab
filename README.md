@@ -154,15 +154,15 @@ graph TB
     
     subgraph Ingestion["<b>Data Ingestion Service</b>"]
         DI["<b>Ingestion API</b>"]
-        DI ==>|"<b>Validate Schema</b>"| DI
-        DI ==>|"<b>Publish Events</b>"| Events
+        DI ==>|Validate Schema| DI
+        DI ==>|Publish Events| Events
     end
     
     subgraph Processing["<b>Data Processing Layer</b>"]
         Preproc["<b>Preprocessing Service</b>"]
         FE["<b>Feature Engineering Service</b>"]
-        Preproc ==>|"<b>Clean & Transform</b>"| Preproc
-        FE ==>|"<b>Create Features</b>"| FS
+        Preproc ==>|Clean & Transform| Preproc
+        FE ==>|Create Features| FS
     end
     
     subgraph Storage["<b>Storage & Registry Layer</b>"]
@@ -175,23 +175,23 @@ graph TB
     subgraph Training["<b>Model Development Layer</b>"]
         MT["<b>Model Training Service</b>"]
         ET["<b>Experiment Tracking Service</b>"]
-        MT ==>|"<b>Register Models</b>"| MR
-        MT ==>|"<b>Log Experiments</b>"| ET
-        ET ==>|"<b>Track Metrics</b>"| Meta
+        MT ==>|Register Models| MR
+        MT ==>|Log Experiments| ET
+        ET ==>|Track Metrics| Meta
     end
     
     subgraph Serving["<b>Model Serving Layer</b>"]
         Gateway["<b>API Gateway</b>"]
         MA["<b>Model API Service</b>"]
         MD["<b>Model Deployment Service</b>"]
-        MA ==>|"<b>Load Models</b>"| MR
-        MD ==>|"<b>Deploy</b>"| MA
+        MA ==>|Load Models| MR
+        MD ==>|Deploy| MA
     end
     
     subgraph Monitoring["<b>Observability Layer</b>"]
         Monitor["<b>Monitoring Service</b>"]
         Notify["<b>Notification Service</b>"]
-        Monitor ==>|"<b>Alerts</b>"| Notify
+        Monitor ==>|Alerts| Notify
     end
     
     subgraph Support["<b>Supporting Services</b>"]
@@ -219,30 +219,30 @@ graph TB
     Gateway ==> MA
     
     %% Monitoring connections - Thick dashed arrows
-    MA ==.>|"<b>Metrics</b>"| Monitor
-    MT ==.>|"<b>Metrics</b>"| Monitor
-    Preproc ==.>|"<b>Metrics</b>"| Monitor
+    MA ==.>|Metrics| Monitor
+    MT ==.>|Metrics| Monitor
+    Preproc ==.>|Metrics| Monitor
     
     %% Supporting connections - Thick dashed arrows
-    Auth ==.>|"<b>Secure</b>"| Gateway
-    Auth ==.>|"<b>Secure</b>"| MT
-    Config ==.>|"<b>Configure</b>"| MA
-    Config ==.>|"<b>Configure</b>"| MT
-    DL ==.>|"<b>Track</b>"| Preproc
-    DL ==.>|"<b>Track</b>"| FE
-    MG ==.>|"<b>Govern</b>"| MR
-    AB ==.>|"<b>Test</b>"| MA
-    BP ==.>|"<b>Process</b>"| Preproc
+    Auth ==.>|Secure| Gateway
+    Auth ==.>|Secure| MT
+    Config ==.>|Configure| MA
+    Config ==.>|Configure| MT
+    DL ==.>|Track| Preproc
+    DL ==.>|Track| FE
+    MG ==.>|Govern| MR
+    AB ==.>|Test| MA
+    BP ==.>|Process| Preproc
     
     %% Orchestration - Thick dashed arrows
-    WF ==.>|"<b>Orchestrate</b>"| MT
-    WF ==.>|"<b>Orchestrate</b>"| Preproc
-    CICD ==.>|"<b>Deploy</b>"| MD
+    WF ==.>|Orchestrate| MT
+    WF ==.>|Orchestrate| Preproc
+    CICD ==.>|Deploy| MD
     
     %% Metadata connections - Thick dashed arrows
-    Meta ==.>|"<b>Store Metadata</b>"| FS
-    Meta ==.>|"<b>Store Metadata</b>"| MR
-    Meta ==.>|"<b>Store Metadata</b>"| DV
+    Meta ==.>|Store Metadata| FS
+    Meta ==.>|Store Metadata| MR
+    Meta ==.>|Store Metadata| DV
     
     style Ingestion fill:#e1f5ff,stroke:#01579b,stroke-width:3px
     style Processing fill:#f3e5f5,stroke:#4a148c,stroke-width:3px
